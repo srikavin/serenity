@@ -168,6 +168,7 @@ set(SOURCES
     HTML/CanvasGradient.cpp
     HTML/CanvasRenderingContext2D.cpp
     HTML/CloseEvent.cpp
+    HTML/CORSSettingAttribute.cpp
     HTML/CrossOrigin/AbstractOperations.cpp
     HTML/CrossOrigin/Reporting.cpp
     HTML/DOMParser.cpp
@@ -271,6 +272,7 @@ set(SOURCES
     HTML/Parser/ListOfActiveFormattingElements.cpp
     HTML/Parser/StackOfOpenElements.cpp
     HTML/Path2D.cpp
+    HTML/PotentialCORSRequest.cpp
     HTML/PromiseRejectionEvent.cpp
     HTML/Scripting/ClassicScript.cpp
     HTML/Scripting/Environments.cpp
