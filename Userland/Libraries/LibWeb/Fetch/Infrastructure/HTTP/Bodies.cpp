@@ -8,6 +8,7 @@
 #include <LibWeb/Bindings/MainThreadVM.h>
 #include <LibWeb/Fetch/BodyInit.h>
 #include <LibWeb/Fetch/Infrastructure/HTTP/Bodies.h>
+#include <LibWeb/Fetch/Infrastructure/Task.h>
 #include <LibWeb/WebIDL/Promise.h>
 
 namespace Web::Fetch::Infrastructure {
@@ -40,19 +41,35 @@ WebIDL::ExceptionOr<Body> Body::clone() const
     return Body { JS::make_handle(out2), m_source, m_length };
 }
 
-// https://fetch.spec.whatwg.org/#fully-reading-body-as-promise
-JS::NonnullGCPtr<JS::PromiseCapability> Body::fully_read_as_promise() const
+// https://fetch.spec.whatwg.org/#body-fully-read
+void Body::fully_read(JS::SafeFunction<void(ByteBuffer)> process_body, JS::SafeFunction<void()> process_body_error,
+    Variant<Empty, JS::NonnullGCPtr<JS::Object>> task_destination) const
 {
-    auto& vm = Bindings::main_thread_vm();
-    auto& realm = *vm.current_realm();
+    // FIXME: 1. If taskDestination is null, then set taskDestination to the result of starting a new parallel queue.
+
+    // 2. Let successSteps given a byte sequence bytes be to queue a fetch task to run processBody given bytes, with taskDestination.
+    auto success_steps = [task_destination, process_body = move(process_body)](ByteBuffer bytes) mutable {
+        queue_fetch_task(*task_destination.get<JS::NonnullGCPtr<JS::Object>>(), [process_body = move(process_body), bytes = move(bytes)] {
+            process_body(move(bytes));
+        });
+    };
+
+    // 3. Let errorSteps be to queue a fetch task to run processBodyError, with taskDestination.
+    auto error_steps = [task_destination, process_body_error = move(process_body_error)]() mutable {
+        queue_fetch_task(*task_destination.get<JS::NonnullGCPtr<JS::Object>>(), [process_body_error = move(process_body_error)]() {
+            process_body_error();
+        });
+    };
+
+    // FIXME: 4. Let reader be the result of getting a reader for body’s stream. If that threw an exception, then run errorSteps with that exception and return.
+    // FIXME: 5. Read all bytes from reader, given successSteps and errorSteps.
 
     // FIXME: Implement the streams spec - this is completely made up for now :^)
     if (auto const* byte_buffer = m_source.get_pointer<ByteBuffer>()) {
-        auto result = DeprecatedString::copy(*byte_buffer);
-        return WebIDL::create_resolved_promise(realm, JS::PrimitiveString::create(vm, move(result)));
+        success_steps(*byte_buffer);
+    } else {
+        error_steps();
     }
-    // Empty, Blob, FormData
-    return WebIDL::create_rejected_promise(realm, JS::InternalError::create(realm, "Reading body isn't fully implemented"sv));
 }
 
 // https://fetch.spec.whatwg.org/#byte-sequence-as-a-body

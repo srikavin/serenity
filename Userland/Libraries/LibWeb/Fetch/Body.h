@@ -41,7 +41,6 @@ public:
     [[nodiscard]] JS::NonnullGCPtr<JS::Promise> text() const;
 };
 
-[[nodiscard]] WebIDL::ExceptionOr<JS::Value> package_data(JS::Realm&, ByteBuffer, PackageDataType, Optional<MimeSniff::MimeType> const&);
-[[nodiscard]] JS::NonnullGCPtr<JS::Promise> consume_body(JS::Realm&, BodyMixin const&, PackageDataType);
+[[nodiscard]] JS::NonnullGCPtr<JS::Promise> consume_body(JS::Realm& realm, BodyMixin const& object, JS::SafeFunction<WebIDL::ExceptionOr<JS::Value>(AK::ByteBuffer)> convertBytesToJSValue);
 
 }
